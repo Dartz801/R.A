@@ -1,7 +1,7 @@
-﻿param([switch]$SmokeTest)
+param([switch]$SmokeTest)
 #Requires -Version 5.1
 # ==============================================================================
-#  R.A — Inventory Search + Alter Provisioning  (versi PowerShell/WPF)
+#  R.A - Inventory Search + Alter Provisioning  (versi PowerShell/WPF)
 #  Cara pakai (gaya Chris Titus WinUtil, tanpa download manual):
 #    irm https://raw.githubusercontent.com/USERNAME/REPO/main/RA.ps1 | iex
 #  (jalankan di terminal yang Run as Administrator bila diwajibkan)
@@ -271,7 +271,7 @@ $xaml = @'
         </Grid>
       </Border>
     </Grid>
-    <TextBlock Grid.Row="1" Text="© 2026, Yudha Prastyo. All rights reserved." HorizontalAlignment="Center" Margin="0,0,0,10" FontSize="10" Foreground="Gray"/>
+    <TextBlock Grid.Row="1" Text="(c) 2026, Yudha Prastyo. All rights reserved." HorizontalAlignment="Center" Margin="0,0,0,10" FontSize="10" Foreground="Gray"/>
   </Grid>
 </Window>
 '@
@@ -360,7 +360,7 @@ function Do-Search {
     $R.lblCount.Text = "Menampilkan $($res.Count) dari $($Script:Rows.Count) data"
     if ($res.Count -gt 0) {
         Fill-AlterFromSearch $res[0]
-        $R.lblCount.Text += ' • Alter terisi otomatis'
+        $R.lblCount.Text += ' - Alter terisi otomatis'
     }
 }
 
@@ -390,7 +390,7 @@ function Do-BimaExtract {
         Fill-AlterFromServices $svc
         $info = "IP=$($p.IP) Slot=$($p.Slot) Port=$($p.Port)`r`nINTERNET=$($svc.INTERNET)`r`nVOICE=$($svc.VOICE)`r`nIPTV=$($svc.IPTV)"
         try { [System.Windows.Clipboard]::SetText($info) } catch { }
-        $R.lblCount.Text += ' • Service terisi'
+        $R.lblCount.Text += ' - Service terisi'
     }
 }
 
@@ -400,13 +400,13 @@ $R.btnEkstrak.Add_Click({ Do-BimaExtract })
 $R.btnReset.Add_Click({
     $R.txtIP.Text = ''; $R.txtSlot.Text = ''; $R.txtPort.Text = ''
     $R.gridHasil.ItemsSource = $null
-    $R.lblCount.Text = "$($Script:Rows.Count) data siap — isi IP / Slot / Port lalu klik Cari"
+    $R.lblCount.Text = "$($Script:Rows.Count) data siap - isi IP / Slot / Port lalu klik Cari"
 })
 $R.btnRefresh.Add_Click({
     try {
         $Script:Rows = Get-SheetRows
-        $R.lblCount.Text = "$($Script:Rows.Count) data siap — isi IP / Slot / Port lalu klik Cari"
-    } catch { $R.lblCount.Text = 'Gagal refresh — periksa koneksi / Share publik' }
+        $R.lblCount.Text = "$($Script:Rows.Count) data siap - isi IP / Slot / Port lalu klik Cari"
+    } catch { $R.lblCount.Text = 'Gagal refresh - periksa koneksi / Share publik' }
 })
 $R.btnAdd.Add_Click({ Add-AlterRow })
 $R.btnClear.Add_Click({
@@ -423,7 +423,7 @@ $R.btnDownload.Add_Click({
     while (Test-Path $dl) { $dl = $base -replace '\.csv$', "_$i.csv"; $i++ }
     $data | Select-Object RESOURCE_ID, SERVICE_NAME, TARGET_ID, @{ N = 'CONFIG_ITEM_NAME'; E = { $_.CONFIG } } |
         Export-Csv -Path $dl -NoTypeInformation -Encoding UTF8
-    $R.lblCount.Text = "Tersimpan $($data.Count) baris → $dl"
+    $R.lblCount.Text = "Tersimpan $($data.Count) baris -> $dl"
 })
 $R.gridHasil.Add_MouseDoubleClick({
     $sel = $R.gridHasil.SelectedItem
@@ -436,6 +436,6 @@ foreach ($tb in @($R.txtIP, $R.txtSlot, $R.txtPort)) {
 # Muat data awal
 $R.lblCount.Text = 'Memuat data dari IP BOGOR...'
 try { $Script:Rows = Get-SheetRows } catch { $Script:Rows = Get-FallbackRows }
-$R.lblCount.Text = "$($Script:Rows.Count) data siap — isi IP / Slot / Port lalu klik Cari"
+$R.lblCount.Text = "$($Script:Rows.Count) data siap - isi IP / Slot / Port lalu klik Cari"
 
 $win.ShowDialog() | Out-Null
