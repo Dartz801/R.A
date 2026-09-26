@@ -69,6 +69,16 @@ function Extract-Services {
     return $out
 }
 
+function Write-ProvisionCsv($path, $rows) {
+    $lines = @('"RESOURCE_ID","SERVICE_NAME","TARGET_ID","CONFIG_ITEM_NAME"')
+    foreach ($row in $rows) {
+        $f = @($row.RESOURCE_ID, $row.SERVICE_NAME, $row.TARGET_ID, $row.CONFIG) |
+            ForEach-Object { ([string]$_).Replace('"', '""') }
+        $lines += '"{0}","{1}","{2}","{3}"' -f $f[0], $f[1], $f[2], $f[3]
+    }
+    [IO.File]::WriteAllText($path, ($lines -join "`n"), (New-Object Text.UTF8Encoding $false))
+}
+
 function Get-DownloadFolder {
     try {
         $p = (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
@@ -437,8 +447,7 @@ $UI.btnDownload.Add_Click({
     $i = 1
     $base = $dl
     while (Test-Path $dl) { $dl = $base -replace '\.csv$', "_$i.csv"; $i++ }
-    $data | Select-Object RESOURCE_ID, SERVICE_NAME, TARGET_ID, @{ N = 'CONFIG_ITEM_NAME'; E = { $_.CONFIG } } |
-        Export-Csv -Path $dl -NoTypeInformation -Encoding UTF8
+    Write-ProvisionCsv $dl $data
     $UI.lblCount.Text = "Tersimpan $($data.Count) baris -> $dl"
 })
 $UI.gridHasil.Add_MouseDoubleClick({
