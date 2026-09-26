@@ -69,6 +69,16 @@ function Extract-Services {
     return $out
 }
 
+function Get-DownloadFolder {
+    try {
+        $p = (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
+        if ($p -and (Test-Path $p)) { return $p }
+    } catch { }
+    $p = Join-Path $home 'Downloads'
+    if (Test-Path $p) { return $p }
+    return $env:TEMP
+}
+
 function Get-SheetRows {
     $url = "https://docs.google.com/spreadsheets/d/$Script:SheetId/gviz/tq?tqx=out:csv&sheet=" + [uri]::EscapeDataString($Script:SheetName)
     $txt = Invoke-RestMethod -Uri $url -TimeoutSec 30
@@ -104,6 +114,8 @@ if ($SmokeTest) {
     if ($v.Slot -ne '1' -or $v.Port -ne '2') { 'FAIL OLT'; $gagal++ }
     if (-not (Num-Eq '06' '6')) { 'FAIL NUMEQ'; $gagal++ }
     if (Num-Eq '16' '6') { 'FAIL NUMEQ2'; $gagal++ }
+    $dlTest = Get-DownloadFolder
+    if (-not (Test-Path $dlTest)) { 'FAIL DLPATH'; $gagal++ }
     if ($gagal -eq 0) { 'SMOKE OK' } else { "SMOKE GAGAL: $gagal" ; exit 1 }
     exit 0
 }
@@ -279,37 +291,37 @@ $xaml = @'
 # ---------------------------------- UI --------------------------------------
 $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $win = [System.Windows.Markup.XamlReader]::Load($reader)
-$R = @{}
+$UI = @{}
 $win.FindName('Root') | Out-Null
 foreach ($n in @('txtIP','txtSlot','txtPort','btnCari','txtValins','txtBima','btnCariData','btnEkstrak',
                  'lblCount','gridHasil','btnRefresh','btnReset','gridAlter','colCfg',
                  'btnAdd','btnDownload','btnClear','CardLeft','CardRight','Root')) {
-    $R[$n] = $win.FindName($n)
+    $UI[$n] = $win.FindName($n)
 }
 
 $HintValins = 'Paste Valins...'
 $HintBima   = 'Paste Detail BIMA...'
-$R.txtIP.Text = '172.28.114.62'
-$R.txtValins.Text = $HintValins; $R.txtValins.Foreground = 'Gray'
-$R.txtBima.Text   = $HintBima;   $R.txtBima.Foreground = 'Gray'
-$R.txtValins.Add_GotFocus({ if ($R.txtValins.Text -eq $HintValins) { $R.txtValins.Text = ''; $R.txtValins.Foreground = 'Black' } })
-$R.txtValins.Add_LostFocus({ if (-not $R.txtValins.Text.Trim()) { $R.txtValins.Text = $HintValins; $R.txtValins.Foreground = 'Gray' } })
-$R.txtBima.Add_GotFocus({ if ($R.txtBima.Text -eq $HintBima) { $R.txtBima.Text = ''; $R.txtBima.Foreground = 'Black' } })
-$R.txtBima.Add_LostFocus({ if (-not $R.txtBima.Text.Trim()) { $R.txtBima.Text = $HintBima; $R.txtBima.Foreground = 'Gray' } })
+$UI.txtIP.Text = '172.28.114.62'
+$UI.txtValins.Text = $HintValins; $UI.txtValins.Foreground = 'Gray'
+$UI.txtBima.Text   = $HintBima;   $UI.txtBima.Foreground = 'Gray'
+$UI.txtValins.Add_GotFocus({ if ($UI.txtValins.Text -eq $HintValins) { $UI.txtValins.Text = ''; $UI.txtValins.Foreground = 'Black' } })
+$UI.txtValins.Add_LostFocus({ if (-not $UI.txtValins.Text.Trim()) { $UI.txtValins.Text = $HintValins; $UI.txtValins.Foreground = 'Gray' } })
+$UI.txtBima.Add_GotFocus({ if ($UI.txtBima.Text -eq $HintBima) { $UI.txtBima.Text = ''; $UI.txtBima.Foreground = 'Black' } })
+$UI.txtBima.Add_LostFocus({ if (-not $UI.txtBima.Text.Trim()) { $UI.txtBima.Text = $HintBima; $UI.txtBima.Foreground = 'Gray' } })
 function Get-Paste($box, $hint) { $t = $box.Text.Trim(); if ($t -eq $hint) { '' } else { $t } }
 
 # Tema ikut Windows
 if (Get-IsDarkMode) {
-    $R.Root.Background = '#212121'
-    $R.CardLeft.Background = '#2B2B2B'; $R.CardRight.Background = '#2B2B2B'
-    foreach ($tb in @($R.txtIP, $R.txtSlot, $R.txtPort, $R.txtValins, $R.txtBima)) {
+    $UI.Root.Background = '#212121'
+    $UI.CardLeft.Background = '#2B2B2B'; $UI.CardRight.Background = '#2B2B2B'
+    foreach ($tb in @($UI.txtIP, $UI.txtSlot, $UI.txtPort, $UI.txtValins, $UI.txtBima)) {
         $tb.Background = '#343638'; $tb.Foreground = 'White'; $tb.BorderBrush = '#4A4A4A'
     }
-    $R.gridHasil.Background = '#2B2B2B'; $R.gridHasil.Foreground = 'White'
-    $R.gridHasil.RowBackground = '#2B2B2B'; $R.gridHasil.AlternatingRowBackground = '#323232'
-    $R.gridAlter.Background = '#2B2B2B'; $R.gridAlter.Foreground = 'White'
-    $R.gridAlter.RowBackground = '#2B2B2B'; $R.gridAlter.AlternatingRowBackground = '#323232'
-    $R.lblCount.Foreground = '#B0B0B0'
+    $UI.gridHasil.Background = '#2B2B2B'; $UI.gridHasil.Foreground = 'White'
+    $UI.gridHasil.RowBackground = '#2B2B2B'; $UI.gridHasil.AlternatingRowBackground = '#323232'
+    $UI.gridAlter.Background = '#2B2B2B'; $UI.gridAlter.Foreground = 'White'
+    $UI.gridAlter.RowBackground = '#2B2B2B'; $UI.gridAlter.AlternatingRowBackground = '#323232'
+    $UI.lblCount.Foreground = '#B0B0B0'
 }
 
 # Data Alter
@@ -318,9 +330,9 @@ function Add-AlterRow {
     $AlterRows.Add([pscustomobject]@{ RESOURCE_ID = ''; SERVICE_NAME = ''; TARGET_ID = ''; CONFIG = 'Service_Port' }) | Out-Null
 }
 1..5 | ForEach-Object { Add-AlterRow }
-$R.gridAlter.ItemsSource = $AlterRows
-$R.colCfg.ItemsSource = @('Service_Port', 'S-Vlan')
-$R.gridAlter.AddHandler([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent,
+$UI.gridAlter.ItemsSource = $AlterRows
+$UI.colCfg.ItemsSource = @('Service_Port', 'S-Vlan')
+$UI.gridAlter.AddHandler([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent,
     [System.Windows.RoutedEventHandler]{
         param($s, $e)
         $item = $e.OriginalSource.DataContext
@@ -328,12 +340,17 @@ $R.gridAlter.AddHandler([System.Windows.Controls.Primitives.ButtonBase]::ClickEv
         if ($AlterRows.Count -eq 0) { Add-AlterRow }
     })
 
+function Refresh-AlterGrid {
+    $UI.gridAlter.ItemsSource = $null
+    $UI.gridAlter.ItemsSource = $AlterRows
+}
+
 function Fill-AlterFromSearch($row) {
     while ($AlterRows.Count -lt 5) { Add-AlterRow }
     $map = @( @($row.ID_PORT, 'Service_Port'), @($row.ID_PORT, 'Service_Port'), @($row.ID_PORT, 'Service_Port'),
               @($row.VLAN_NET, 'S-Vlan'), @($row.VLAN_VOIP, 'S-Vlan') )
     for ($i = 0; $i -lt 5; $i++) { $AlterRows[$i].RESOURCE_ID = [string]$map[$i][0]; $AlterRows[$i].CONFIG = $map[$i][1] }
-    $R.gridAlter.Items.Refresh()
+    Refresh-AlterGrid
 }
 
 function Fill-AlterFromServices($svc) {
@@ -341,14 +358,14 @@ function Fill-AlterFromServices($svc) {
     $map = @( @($svc.INTERNET, 'Service_Port'), @($svc.VOICE, 'Service_Port'), @($svc.IPTV, 'Service_Port'),
               @($svc.INTERNET, 'S-Vlan'), @($svc.VOICE, 'S-Vlan') )
     for ($i = 0; $i -lt 5; $i++) { $AlterRows[$i].SERVICE_NAME = [string]$map[$i][0]; $AlterRows[$i].CONFIG = $map[$i][1] }
-    $R.gridAlter.Items.Refresh()
+    Refresh-AlterGrid
 }
 
 function Do-Search {
-    $ip = $R.txtIP.Text.Trim(); $sl = $R.txtSlot.Text.Trim(); $pt = $R.txtPort.Text.Trim()
+    $ip = $UI.txtIP.Text.Trim(); $sl = $UI.txtSlot.Text.Trim(); $pt = $UI.txtPort.Text.Trim()
     if (-not $ip -and -not $sl -and -not $pt) {
-        $R.gridHasil.ItemsSource = $null
-        $R.lblCount.Text = 'Isi IP / Slot / Port dulu, lalu klik Cari'
+        $UI.gridHasil.ItemsSource = $null
+        $UI.lblCount.Text = 'Isi IP / Slot / Port dulu, lalu klik Cari'
         return
     }
     $res = @($Script:Rows | Where-Object {
@@ -356,33 +373,33 @@ function Do-Search {
         ($sl -eq '' -or (Num-Eq $_.SLOT $sl)) -and
         ($pt -eq '' -or (Num-Eq $_.PORT $pt))
     })
-    $R.gridHasil.ItemsSource = $res
-    $R.lblCount.Text = "Menampilkan $($res.Count) dari $($Script:Rows.Count) data"
+    $UI.gridHasil.ItemsSource = $res
+    $UI.lblCount.Text = "Menampilkan $($res.Count) dari $($Script:Rows.Count) data"
     if ($res.Count -gt 0) {
         Fill-AlterFromSearch $res[0]
-        $R.lblCount.Text += ' - Alter terisi otomatis'
+        $UI.lblCount.Text += ' - Alter terisi otomatis'
     }
 }
 
 function Do-ValinsSearch {
-    $t = Get-Paste $R.txtValins $HintValins
+    $t = Get-Paste $UI.txtValins $HintValins
     if (-not $t) { return }
     $p = Extract-IpSlotPort $t
     if (-not ($p.IP -or $p.Slot -or $p.Port)) { return }
-    if ($p.IP) { $R.txtIP.Text = $p.IP }
-    if ($p.Slot) { $R.txtSlot.Text = $p.Slot }
-    if ($p.Port) { $R.txtPort.Text = $p.Port }
+    if ($p.IP) { $UI.txtIP.Text = $p.IP }
+    if ($p.Slot) { $UI.txtSlot.Text = $p.Slot }
+    if ($p.Port) { $UI.txtPort.Text = $p.Port }
     Do-Search
 }
 
 function Do-BimaExtract {
-    $t = Get-Paste $R.txtBima $HintBima
+    $t = Get-Paste $UI.txtBima $HintBima
     if (-not $t) { return }
     $p = Extract-IpSlotPort $t
     if ($p.IP -or $p.Slot -or $p.Port) {
-        if ($p.IP) { $R.txtIP.Text = $p.IP }
-        if ($p.Slot) { $R.txtSlot.Text = $p.Slot }
-        if ($p.Port) { $R.txtPort.Text = $p.Port }
+        if ($p.IP) { $UI.txtIP.Text = $p.IP }
+        if ($p.Slot) { $UI.txtSlot.Text = $p.Slot }
+        if ($p.Port) { $UI.txtPort.Text = $p.Port }
         Do-Search
     }
     $svc = Extract-Services $t
@@ -390,52 +407,58 @@ function Do-BimaExtract {
         Fill-AlterFromServices $svc
         $info = "IP=$($p.IP) Slot=$($p.Slot) Port=$($p.Port)`r`nINTERNET=$($svc.INTERNET)`r`nVOICE=$($svc.VOICE)`r`nIPTV=$($svc.IPTV)"
         try { [System.Windows.Clipboard]::SetText($info) } catch { }
-        $R.lblCount.Text += ' - Service terisi'
+        $UI.lblCount.Text += ' - Service terisi'
     }
 }
 
-$R.btnCari.Add_Click({ Do-Search })
-$R.btnCariData.Add_Click({ Do-ValinsSearch })
-$R.btnEkstrak.Add_Click({ Do-BimaExtract })
-$R.btnReset.Add_Click({
-    $R.txtIP.Text = ''; $R.txtSlot.Text = ''; $R.txtPort.Text = ''
-    $R.gridHasil.ItemsSource = $null
-    $R.lblCount.Text = "$($Script:Rows.Count) data siap - isi IP / Slot / Port lalu klik Cari"
+$UI.btnCari.Add_Click({ Do-Search })
+$UI.btnCariData.Add_Click({ Do-ValinsSearch })
+$UI.btnEkstrak.Add_Click({ Do-BimaExtract })
+$UI.btnReset.Add_Click({
+    $UI.txtIP.Text = ''; $UI.txtSlot.Text = ''; $UI.txtPort.Text = ''
+    $UI.gridHasil.ItemsSource = $null
+    $UI.lblCount.Text = "$($Script:Rows.Count) data siap - isi IP / Slot / Port lalu klik Cari"
 })
-$R.btnRefresh.Add_Click({
+$UI.btnRefresh.Add_Click({
     try {
         $Script:Rows = Get-SheetRows
-        $R.lblCount.Text = "$($Script:Rows.Count) data siap - isi IP / Slot / Port lalu klik Cari"
-    } catch { $R.lblCount.Text = 'Gagal refresh - periksa koneksi / Share publik' }
+        $UI.lblCount.Text = "$($Script:Rows.Count) data siap - isi IP / Slot / Port lalu klik Cari"
+    } catch { $UI.lblCount.Text = 'Gagal refresh - periksa koneksi / Share publik' }
 })
-$R.btnAdd.Add_Click({ Add-AlterRow })
-$R.btnClear.Add_Click({
-    foreach ($r in $AlterRows) { $r.RESOURCE_ID = ''; $r.SERVICE_NAME = ''; $r.TARGET_ID = ''; $r.CONFIG = 'Service_Port' }
-    $R.gridAlter.Items.Refresh()
+$UI.btnAdd.Add_Click({ Add-AlterRow })
+$UI.btnClear.Add_Click({
+    foreach ($brs in $AlterRows) { $brs.RESOURCE_ID = ''; $brs.SERVICE_NAME = ''; $brs.TARGET_ID = ''; $brs.CONFIG = 'Service_Port' }
+    Refresh-AlterGrid
 })
-$R.btnDownload.Add_Click({
+$UI.btnDownload.Add_Click({
     $data = @($AlterRows | Where-Object { $_.RESOURCE_ID -or $_.SERVICE_NAME -or $_.TARGET_ID })
     if ($data.Count -eq 0) { return }
-    $dl = Join-Path ([Environment]::GetFolderPath('MyDocuments').Replace('\Documents', '\Downloads')) 'Alter.csv'
-    if (-not (Test-Path (Split-Path $dl))) { $dl = Join-Path $env:TEMP 'Alter.csv' }
+    $dl = Join-Path (Get-DownloadFolder) 'Alter.csv'
     $i = 1
     $base = $dl
     while (Test-Path $dl) { $dl = $base -replace '\.csv$', "_$i.csv"; $i++ }
     $data | Select-Object RESOURCE_ID, SERVICE_NAME, TARGET_ID, @{ N = 'CONFIG_ITEM_NAME'; E = { $_.CONFIG } } |
         Export-Csv -Path $dl -NoTypeInformation -Encoding UTF8
-    $R.lblCount.Text = "Tersimpan $($data.Count) baris -> $dl"
+    $UI.lblCount.Text = "Tersimpan $($data.Count) baris -> $dl"
 })
-$R.gridHasil.Add_MouseDoubleClick({
-    $sel = $R.gridHasil.SelectedItem
+$UI.gridHasil.Add_MouseDoubleClick({
+    $sel = $UI.gridHasil.SelectedItem
     if ($sel) { try { [System.Windows.Clipboard]::SetText("$($sel.VLAN_NET) | $($sel.VLAN_VOIP) | $($sel.ID_PORT) | $($sel.GPON)") } catch { } }
 })
-foreach ($tb in @($R.txtIP, $R.txtSlot, $R.txtPort)) {
+foreach ($tb in @($UI.txtIP, $UI.txtSlot, $UI.txtPort)) {
     $tb.Add_KeyDown({ param($s, $e) if ($e.Key -eq 'Enter') { Do-Search } })
 }
 
 # Muat data awal
-$R.lblCount.Text = 'Memuat data dari IP BOGOR...'
+$UI.lblCount.Text = 'Memuat data dari IP BOGOR...'
 try { $Script:Rows = Get-SheetRows } catch { $Script:Rows = Get-FallbackRows }
-$R.lblCount.Text = "$($Script:Rows.Count) data siap - isi IP / Slot / Port lalu klik Cari"
+$UI.lblCount.Text = "$($Script:Rows.Count) data siap - isi IP / Slot / Port lalu klik Cari"
+
+# Pengaman: error di tombol jangan matikan aplikasi, tampilkan di info saja
+[System.Windows.Threading.Dispatcher]::CurrentDispatcher.add_UnhandledException({
+    param($s, $e)
+    try { $UI.lblCount.Text = 'Error: ' + $e.Exception.Message } catch { }
+    $e.Handled = $true
+})
 
 $win.ShowDialog() | Out-Null
